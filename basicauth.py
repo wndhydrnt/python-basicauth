@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """An incredibly simple HTTP basic auth implementation."""
 
 
