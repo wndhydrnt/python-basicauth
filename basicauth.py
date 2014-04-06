@@ -2,7 +2,12 @@
 
 
 from base64 import b64decode, b64encode
-from urllib import quote, unquote
+
+import sys
+if sys.version_info >= (3, 0):
+    from urllib.parse import quote, unquote
+else:
+    from urllib import quote, unquote
 
 
 class DecodeError(Exception):
@@ -13,7 +18,9 @@ def encode(username, password):
     """Returns an HTTP basic authentication encrypted string given a valid
     username and password.
     """
-    return 'Basic ' + b64encode('%s:%s' % (quote(username), quote(password)))
+    credentials = '{0}:{1}'.format(quote(username), quote(password)).\
+        encode('latin1')
+    return 'Basic {0}'.format(b64encode(credentials).decode('latin1'))
 
 
 def decode(encoded_str):
@@ -21,13 +28,13 @@ def decode(encoded_str):
     the form (username, password), and raises a DecodeError exception if
     nothing could be decoded.
     """
-    split = encoded_str.strip().split(' ')
+    split = encoded_str.strip().encode("latin1").split(None)
 
     # If split is only one element, try to decode the username and password
     # directly.
     if len(split) == 1:
         try:
-            username, password = b64decode(split[0]).split(':')
+            username, password = b64decode(split[0]).split(b':', 1)
         except:
             raise DecodeError
 
@@ -35,9 +42,9 @@ def decode(encoded_str):
     # 'basic' so that we know we're about to decode the right thing. If not,
     # bail out.
     elif len(split) == 2:
-        if split[0].strip().lower() == 'basic':
+        if split[0].strip().lower() == b'basic':
             try:
-                username, password = b64decode(split[1]).split(':')
+                username, password = b64decode(split[1]).split(b':', 1)
             except:
                 raise DecodeError
         else:
@@ -48,4 +55,5 @@ def decode(encoded_str):
     else:
         raise DecodeError
 
-    return unquote(username), unquote(password)
+    return (unquote(username.decode('latin1')),
+            unquote(password.decode('latin1')))
